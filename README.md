@@ -20,7 +20,7 @@ The output file it's like this:
 
 ![smithChart.png](smithChart.png)
 
-As was said, it requires bokeh library.
+It requires numpy and bokeh.
 
 ---
 
