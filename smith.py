@@ -2,12 +2,11 @@
 # -*- coding: utf-8 -*-
 """
 Created on Thu Jun 17 17:28:26 2021
-
 @author: mseb
 """
 
 import numpy as np
-from bokeh.plotting import figure,output_file, show
+from bokeh.plotting import figure,output_file, show, save
 from bokeh.io import curdoc
 
 class smith:
@@ -22,9 +21,10 @@ class smith:
         chartSize: Height/Width of the chart | Default: 850 px
         """
         self.Z0 = Z0
+        self.chartSize = chartSize
         fig1Title = f'Characteristic Impedance: {Z0} Ohms'
         curdoc().theme = 'dark_minimal'
-        self.smithChart = figure(title=fig1Title,plot_width=chartSize,plot_height=chartSize,tooltips=[('Parte real','@xcoord'),('Parte imaginaria','@ycoord'),('Impedancia','@zimp')])
+        self.smithChart = figure(title=fig1Title,plot_width=chartSize,plot_height=self.chartSize,tooltips=[('Parte real','@xcoord'),('Parte imaginaria','@ycoord'),('Impedancia','@zimp')])
         self.smithChart.toolbar.active_drag = None
         self.smithChart.x_range.range_padding = self.smithChart.y_range.range_padding = 0
         self.smithChart.grid.grid_line_width = 0
@@ -34,6 +34,9 @@ class smith:
         self.smithChart.yaxis.major_tick_line_color = None
         self.smithChart.yaxis.minor_tick_line_color = None
         self.smithChart.axis.visible = False
+        
+    def __str__(self):
+        return f'Smith plot of characteristic impedance {self.Z0}. Chart width/height = {self.chartSize}'
         
     def drawZList(self, l, c='b'):
         """
@@ -72,8 +75,10 @@ class smith:
         zlst = [complex(0, y)]+[complex(z, y) for z in np.logspace(0, 6, npts)]
         self.drawZList(zlst, 'k')
         
-    def manualValues(self):
+    def drawGrid(self):
         """
+        Draws the Smith Chart grid.
+        
         Make it look like the old school Smith
         Creates an array of values with those resolutions
         
@@ -87,25 +92,20 @@ class smith:
         7        | 20          | 50         | 10
         """
         
-        self.gridValues = np.arange(0,0.21,0.01)
-        self.gridValues = np.concatenate((self.gridValues,np.arange(0.2,0.52,0.02)))
-        self.gridValues = np.concatenate((self.gridValues,np.arange(0.55,1.05,0.05)))
-        self.gridValues = np.concatenate((self.gridValues,np.arange(1.2,5.2,0.2)))
-        self.gridValues = np.concatenate((self.gridValues,np.arange(6,10,1)))
-        self.gridValues = np.concatenate((self.gridValues,np.arange(10,22,2)))
-        self.gridValues = np.concatenate((self.gridValues,np.arange(30,60,10)))
-        
-    def drawGrid(self):
-        """
-        Draws the Smith Chart grid.
-        """
-        self.manualValues()
-        for i in self.gridValues:
+        gridValues = np.arange(0,0.21,0.01)
+        gridValues = np.concatenate((gridValues,np.arange(0.2,0.52,0.02)))
+        gridValues = np.concatenate((gridValues,np.arange(0.55,1.05,0.05)))
+        gridValues = np.concatenate((gridValues,np.arange(1.2,5.2,0.2)))
+        gridValues = np.concatenate((gridValues,np.arange(6,10,1)))
+        gridValues = np.concatenate((gridValues,np.arange(10,22,2)))
+        gridValues = np.concatenate((gridValues,np.arange(30,60,10)))
+        for i in gridValues:
             self.drawXCircle(i*self.Z0)
             self.drawYCircle(i*self.Z0)
             if i > 0:
                 self.drawYCircle(-i*self.Z0)
         
+              
     def markZ(self, z, c='red', size=7):
         """
         Marks an impedance with a dot.
@@ -122,7 +122,8 @@ class smith:
         
     def markZarray(self, z, c='white'):
         """
-        Marks an array impedance with a line.
+        Marks an array of impedances with a line.
+        Default color: white
         """
         data = dict(
             x = [self.z2gamma(l).real for l in z],
@@ -139,16 +140,24 @@ class smith:
         """
         return complex(zl-self.Z0)/(zl+self.Z0)       
                     
-    def save(self, filename = 'smithChart'):
+    def save(self, filename = 'smithChart', showBool = False, rootDir = ''):
         """
-        Saves the plot to filename. The extension defines the filetype.
+        Saves the plot as an html file.
+        Parameters:
+            - filename: Name of the output file. Default value: 'smithChart'
+            - showBool: if True, it will open the file after save it. Default value 'False'.
+            - rootDir: Specific path to save the plot. By default saved on this file place.
         """
-        output_file(filename+'.html', title="Smith Chart")
-        show(self.smithChart)
+        if showBool:
+            output_file(rootDir+filename+'.html', title="Smith Chart")
+            show(self.smithChart)
+        else:
+            save(self.smithChart,rootDir+filename+'.html', title="Smith Chart")
 
 if __name__ == '__main__':
     smith = smith()
     smith.markZ(20+30j)
     smith.markZ(2-30j)
     smith.markZarray(np.array([20+30j,20+35j,15+20j,10+5j]))
+    smith.markZarray([20-30j,20-35j,15-20j,10-5j],'red')
     smith.save()
